@@ -1,3 +1,10 @@
+/* Logic:
+ Writing data from sensors to ring buffer never stops, as soon as a page is ready,
+ ring buffer pings arbiter (request), arbiter grants the request (following arbiter logic)
+ and the PAGE_PROGRAM command executes. The arbiter prioritizes
+ (more appropriately, the ring buffer belonging to) the sensor with the most pages ready.
+ If same number of pages are ready, the earliest request will be granted*/
+ 
 module arbiter (
 	input logic req1,
 	input logic req2,
