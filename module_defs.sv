@@ -96,7 +96,7 @@ module ring_buffer #(
 					end
 				end
 				BUSY: begin
-					// page programming logic
+					// add page programming logic
 				end
 				default: read_state <= IDLE;
 			endcase
