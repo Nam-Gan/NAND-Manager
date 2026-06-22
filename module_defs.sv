@@ -22,12 +22,13 @@ module ring_buffer #(
 	input logic clk, // Assuming the clock at 100 MHz
 	input logic rst,
 	input logic input_bus,
+	input logic arbiter_ping,
 	output logic [WIDTH-1:0] output_bus,
 	output logic full,
 	output logic empty,
 	output logic page_ping);
 	//UART IP Instantiation
-	uart_rx rx_module(.data_in(input_bus), .rst(rst), .clk(clk), .data_out(data_from_rx), .rx_valid(rx_valid), .rx_error(.rx_error));
+	uart_rx #(CLOCKSPEED = CLOCKSPEED, BAUD = BAUD) rx_module(.data_in(input_bus), .rst(rst), .clk(clk), .data_out(data_from_rx), .rx_valid(rx_valid), .rx_error(.rx_error));
 	logic [7:0] data_from_rx;
 	logic rx_valid, rx_error;
 	// Definitions
@@ -73,6 +74,36 @@ module ring_buffer #(
 				end
 				default: write_state <= IDLE;
 			endcase
+		end
+	end
+
+	// read fsm
+	state_t read_state;
+	logic [$clog2(PAGES) - 1: 0] read_page_pointer;
+	logic [$clog2(PAGE_SIZE) - 1: 0] read_byte_offset;
+	always_ff @(posedge clk or posedge rst) begin
+		if (rst) begin
+			read_state <= IDLE;
+			read_page_pointer <= 0;
+			read_byte_offset <= 0;
+		end else begin
+			case (read_state)
+				IDLE: begin
+					if(arbiter_ping) begin
+						read_state <= BUSY;
+					end else begin
+						read_state <= IDLE;
+					end
+				end
+				BUSY: begin
+					// page programming logic
+				end
+				default: read_state <= IDLE;
+			endcase
+		end
+	end
+
+
 	endmodule: ring_buffer 
 module uart_rx#(
 	parameter int CLOCKSPEED = 100_000_000,  
