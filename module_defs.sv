@@ -61,12 +61,15 @@ module ring_buffer #(
 				end
 				BUSY: begin
 					if (write_byte_offset == PAGE_SIZE - 1) begin
-						write_page_pointer <= write_page_pointer + 1;
+						if (write_page_pointer == PAGES - 1) begin
+							write_page_pointer <= 0;
+						end else begin
+							write_page_pointer <= write_page_pointer + 1;
+						end
 						write_byte_offset <= 0;
 						mem[write_page_pointer][write_byte_offset] <= data_from_rx;
 						page_ping <= 1'b1;
 					end else begin
-						write_page_pointer <= write_page_pointer + 1;
 						write_byte_offset <= write_byte_offset + 1;
 						mem[write_page_pointer][write_byte_offset] <= data_from_rx;
 					end
