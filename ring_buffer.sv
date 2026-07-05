@@ -12,8 +12,8 @@
 // Note: The clock is assumed to be at 100 MHz, timings would change if the
 // clock speed is changed. 
 //
-// Note: The packets from the sensors must be 8-bit little endian.
-`define PAGE_SIZE 8640
+`define PAGESIZE 8640
+`include "uart_rx.sv"
 module ring_buffer #(
 	parameter int WIDTH = 8, //because the NAND Flash supports byte wise addressing 
 	parameter int PAGES = 2, // page size is 8192 + 448 bytes 
@@ -22,19 +22,19 @@ module ring_buffer #(
 	input logic clk, // Assuming the clock at 100 MHz
 	input logic rst,
 	input logic input_bus,
-	input logic arbiter_ping,
+	input logic tick,
 	output logic [WIDTH-1:0] output_bus,
 	output logic full,
 	output logic empty,
-	output logic page_ping);
+	output logic req);
 	//UART IP Instantiation
 	uart_rx #(CLOCKSPEED = CLOCKSPEED, BAUD = BAUD) rx_module(.data_in(input_bus), .rst(rst), .clk(clk), .data_out(data_from_rx), .rx_valid(rx_valid), .rx_error(.rx_error));
 	logic [7:0] data_from_rx;
 	logic rx_valid, rx_error;
 	// Definitions
-	logic [7:0] mem [PAGES - 1 : 0][PAGE_SIZE - 1 : 0];
+	logic [7:0] mem [PAGES - 1 : 0][PAGESIZE - 1 : 0];
 	logic [$clog2(PAGES) - 1: 0] write_page_pointer;
-	logic [$clog2(PAGE_SIZE) - 1: 0] write_byte_offset;
+	logic [$clog2(PAGESIZE) - 1: 0] write_byte_offset;
 	
 	// Write FSM
 	
@@ -47,9 +47,9 @@ module ring_buffer #(
 			write_state <= IDLE;
 			write_page_pointer <= 1'b0;
 			write_byte_offset <= 0;
-			page_ping <= 1'b0;
+			req <= 1'b0;
 		end else begin
-			page_ping <= 1'b0;
+			req <= 1'b0;
 			// add error handling for rx_error
 			case (write_state)
 				IDLE: begin
@@ -60,7 +60,7 @@ module ring_buffer #(
 					end
 				end
 				BUSY: begin
-					if (write_byte_offset == PAGE_SIZE - 1) begin
+					if (write_byte_offset == PAGESIZE - 1) begin
 						if (write_page_pointer == PAGES - 1) begin
 							write_page_pointer <= 0;
 						end else begin
@@ -68,7 +68,7 @@ module ring_buffer #(
 						end
 						write_byte_offset <= 0;
 						mem[write_page_pointer][write_byte_offset] <= data_from_rx;
-						page_ping <= 1'b1;
+						req <= 1'b1;
 					end else begin
 						write_byte_offset <= write_byte_offset + 1;
 						mem[write_page_pointer][write_byte_offset] <= data_from_rx;
@@ -83,7 +83,7 @@ module ring_buffer #(
 	// read fsm
 	state_t read_state;
 	logic [$clog2(PAGES) - 1: 0] read_page_pointer;
-	logic [$clog2(PAGE_SIZE) - 1: 0] read_byte_offset;
+	logic [$clog2(PAGESIZE) - 1: 0] read_byte_offset;
 	always_ff @(posedge clk or posedge rst) begin
 		if (rst) begin
 			read_state <= IDLE;
@@ -92,14 +92,27 @@ module ring_buffer #(
 		end else begin
 			case (read_state)
 				IDLE: begin
-					if(arbiter_ping) begin
+					if(tick) begin
 						read_state <= BUSY;
+						output_bus <= mem[read_page_pointer][read_byte_offset];
+						read_byte_offset <= 1;
 					end else begin
 						read_state <= IDLE;
 					end
 				end
 				BUSY: begin
-					// add page programming logic
+					if (tick) begin
+						if (read_byte_offset == PAGESIZE - 1) begin
+							read_byte_offset <= 0;
+							read_page_pointer <= read_page_pointer + 1;
+							output_bus <= mem[read_page_pointer][read_byte_offset];
+							read_state <= IDLE;
+						end else begin
+							read_byte_offset <= read_byte_offset + 1;
+							output_bus <= mem[read_page_pointer][read_byte_offset];
+                        end
+                    end else begin
+                        state <= BUSY;
 				end
 				default: read_state <= IDLE;
 			endcase
