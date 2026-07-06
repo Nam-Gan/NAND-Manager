@@ -1,5 +1,7 @@
-`include "module_defs.sv"
+`include "uart_rx.sv"
 `timescale 1ns / 1ps
+`define BAUD 115200
+`define CLOCKSPEED 100_000_000
 module uart_tb();
 	logic clk;
 	initial	clk = 0;
@@ -9,32 +11,41 @@ module uart_tb();
 	logic [7:0] data_out;
 	logic rx_valid;
 	logic rx_error;
+    int fd;
+    int byte_data;
 	uart_rx dut (.*);
-	logic [7:0] payload = 8'hAA;
+    bit err;
 	task send_byte(input [7:0] data);
-		data_in = 0; # 8681;
+		data_in = 0; # 8680;
 		for (int i = 0; i< 8; i++) begin
-			data_in = data[i]; #8681;
+			data_in = data[i]; #8680;
 		end
-		data_in = 1; #8681;
+		data_in = 1; #8680;
 	endtask
-	initial begin
-		rst = 1; #100;
-		rst = 0; #100;
-		send_byte(payload);
-		#10000;
-		send_byte(8'hfa);
-		#10000;
-		send_byte(8'hbb);
-		#10000;
-		$finish;
+    initial begin
+		$dumpfile("waves.vcd"); 
+ 		$dumpvars(0, uart_tb);      
 	end
-	 initial begin
-    		$dumpfile("waves.vcd"); 
-    		$dumpvars(0, uart_tb);      
-	end
-
-		
+    assign err = data_out - byte_data;
+    initial begin
+        #10 rst = 0;
+        #10 rst = 1;
+        #10 rst = 0;
+        fd = $fopen("output_ascii.bin", "rb");
+        if (fd == 0) begin
+            $error("Failed to open file!");
+            $finish;
+        end
+        while (!$feof(fd)) begin
+            byte_data = $fgetc(fd);
+            if (byte_data != -1) begin
+                send_byte(byte_data[7:0]);
+            end
+        end
+    
+        $fclose(fd);
+        $finish;
+    end
 	endmodule
 
 
