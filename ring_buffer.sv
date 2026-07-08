@@ -1,24 +1,21 @@
 //##########################################
 //
-// file_name: module_defs.sv
+// file_name: ring_buffer.sv
 // author: @Nam-Gan
 //
-// Module definitions for writing UART data from multiple payloads to the
-// high-speed NAND Flash, using ring buffers and a weighted round robin
-// arbiter. 
-// Modules defined, ring buffer, pointer storage.
 // #########################################
 //
 // Note: The clock is assumed to be at 100 MHz, timings would change if the
 // clock speed is changed. 
 //
+`include "params.svh"
 `define PAGESIZE 8640
 `include "uart_rx.sv"
 module ring_buffer #(
-	parameter int WIDTH = 8, //because the NAND Flash supports byte wise addressing 
+	parameter int WIDTH = 8, 
 	parameter int PAGES = 2, // page size is 8192 + 448 bytes 
-	parameter int BAUD = 115_200, // BAUD rate of the sensor
-	parameter int CLOCKSPEED = 100_000_000)( 
+	parameter int BAUD = 115_200 // BAUD rate of the sensor
+    )( 
 	input logic clk, // Assuming the clock at 100 MHz
 	input logic rst,
 	input logic input_bus,
@@ -27,14 +24,14 @@ module ring_buffer #(
 	output logic full,
 	output logic empty,
 	output logic req);
-	//UART IP Instantiation
-	uart_rx #(CLOCKSPEED = CLOCKSPEED, BAUD = BAUD) rx_module(.data_in(input_bus), .rst(rst), .clk(clk), .data_out(data_from_rx), .rx_valid(rx_valid), .rx_error(.rx_error));
 	logic [7:0] data_from_rx;
 	logic rx_valid, rx_error;
+	//UART IP Instantiation
+	uart_rx #(.CLOCKSPEED(`CLOCKSPEED))rx_module(.data_in(input_bus), .rst(rst), .clk(clk), .data_out(data_from_rx), .rx_valid(rx_valid), .rx_error(rx_error));
 	// Definitions
-	logic [7:0] mem [PAGES - 1 : 0][PAGESIZE - 1 : 0];
+	logic [7:0] mem [PAGES - 1 : 0][`PAGESIZE - 1 : 0];
 	logic [$clog2(PAGES) - 1: 0] write_page_pointer;
-	logic [$clog2(PAGESIZE) - 1: 0] write_byte_offset;
+	logic [$clog2(`PAGESIZE) - 1: 0] write_byte_offset;
 	
 	// Write FSM
 	
@@ -60,7 +57,7 @@ module ring_buffer #(
 					end
 				end
 				BUSY: begin
-					if (write_byte_offset == PAGESIZE - 1) begin
+					if (write_byte_offset == `PAGESIZE - 1) begin
 						if (write_page_pointer == PAGES - 1) begin
 							write_page_pointer <= 0;
 						end else begin
@@ -83,7 +80,7 @@ module ring_buffer #(
 	// read fsm
 	state_t read_state;
 	logic [$clog2(PAGES) - 1: 0] read_page_pointer;
-	logic [$clog2(PAGESIZE) - 1: 0] read_byte_offset;
+	logic [$clog2(`PAGESIZE) - 1: 0] read_byte_offset;
 	always_ff @(posedge clk or posedge rst) begin
 		if (rst) begin
 			read_state <= IDLE;
@@ -102,7 +99,7 @@ module ring_buffer #(
 				end
 				BUSY: begin
 					if (tick) begin
-						if (read_byte_offset == PAGESIZE - 1) begin
+						if (read_byte_offset == `PAGESIZE - 1) begin
 							read_byte_offset <= 0;
 							read_page_pointer <= read_page_pointer + 1;
 							output_bus <= mem[read_page_pointer][read_byte_offset];
@@ -112,8 +109,9 @@ module ring_buffer #(
 							output_bus <= mem[read_page_pointer][read_byte_offset];
                         end
                     end else begin
-                        state <= BUSY;
+                        read_state <= BUSY;
 				end
+            end
 				default: read_state <= IDLE;
 			endcase
 		end
