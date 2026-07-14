@@ -22,14 +22,14 @@ module page_counter(
             if (s1) begin
                 if (gnt == 1) begin
                     c1 <= c1;
-                end
-                else begin
+                end else begin
                     c1 <= c1 + 1;
-            end else begin
+                end
+            end
+            else begin
                 if (gnt == 1) begin
                     c1 <= c1 - 1;
-                end
-                else begin
+                end else begin
                     c1 <= c1;
                 end
             end
@@ -43,14 +43,13 @@ module page_counter(
             if (s2) begin
                 if (gnt == 2) begin
                     c2 <= c2;
-                end
-                else begin
+                end else begin
                     c2 <= c2 + 1;
+                end
             end else begin
                 if (gnt == 2) begin
                     c2 <= c2 - 1;
-                end
-                else begin
+                end else begin
                     c2 <= c2;
                 end
             end
@@ -64,14 +63,13 @@ module page_counter(
             if (s3) begin
                 if (gnt == 3) begin
                     c3 <= c3;
-                end
-                else begin
+                end else begin
                     c3 <= c3 + 1;
+                end
             end else begin
                 if (gnt == 3) begin
                     c3 <= c3 - 1;
-                end
-                else begin
+                end else begin
                     c3 <= c3;
                 end
             end
@@ -85,14 +83,13 @@ module page_counter(
             if (s4) begin
                 if (gnt == 4) begin
                     c4 <= c4;
-                end
-                else begin
+                end else begin
                     c4 <= c4 + 1;
+                end
             end else begin
                 if (gnt == 4) begin
                     c4 <= c4 - 1;
-                end
-                else begin
+                end else begin
                     c4 <= c4;
                 end
             end

@@ -31,6 +31,7 @@ module mem_block(
         tick3 = 0;
         tick4 = 0;
         case (gnt) 
+          //0: NO-OP
             1: begin
                 tick1 = tick;
                 output_bus = out1;
