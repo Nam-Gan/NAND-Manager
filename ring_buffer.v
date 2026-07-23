@@ -20,10 +20,8 @@ module ring_buffer #(
 	input wire rst,
 	input wire input_bus,
 	input wire tick,
-	output wire [WIDTH-1:0] output_bus,
-	output wire full,
-	output wire empty,
-	output wire req);
+	output reg [WIDTH-1:0] output_bus,
+	output reg req);
 
 	wire [7:0] data_from_rx;
 	wire rx_valid, rx_error;

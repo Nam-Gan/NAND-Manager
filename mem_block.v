@@ -10,10 +10,10 @@ module mem_block(
     input wire tick,
     input wire [`SENS_REG_W: 0] gnt,
     // Request Outputs
-    output wire r1,
-    output wire r2,
-    output wire r3,
-    output wire r4,
+    output reg r1,
+    output reg r2,
+    output reg r3,
+    output reg r4,
     // Universal Inputs
     input wire rst,
     input wire clk,
