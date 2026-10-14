@@ -1,4 +1,5 @@
 *.bin
 *.txt
 *.vcd
+.DS_store
 
