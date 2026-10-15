@@ -1,0 +1,38 @@
+Commanding Unit commands the nand master to do operations in a particular sequence. Also handles the dataflow to and from the NAND-Flash.
+
+The busy wire indicates the state of nand_master fsm.
+
+activate must be held high while submitting any command.
+
+Read:
+    M_NAND_RESET 8'd1
+    Fetch read address of the current sensor from the addressing unit
+    MI_SET_CURRENT_ADDRESS 8'd19
+    MI_CHIP1_ENABLE/MI_CHIP2_ENABLE 8'd9/8'd24
+    M_NAND_READ 8'd6
+    MI_CHIP_DISABLE 8'd10
+    MI_GET_DATA_PAGE_BYTE 8'd16
+
+Write:
+    M_NAND_RESET 8'd1
+    Fetch the write address of the current sensor from the  addressing unit
+    MI_SET_DATA_PAGE_BYTE 8'd17
+    MI_SET_CURRENT_ADDRESS 8'd19
+    MI_CHIP1_ENABLE/MI_CHIP2_ENABLE 8'd9/8'd24
+    MI_WRITE_ENABLE 8'd12
+    M_NAND_PAGE_PROGRAM 8'd7
+    MI_WRITE_PROTECT 8'd11
+    MI_CHIP_DISABLE 8'd10
+
+Mode Change:
+    M_NAND_RESET 8'd1
+
+Addressing Scheme:
+20 bits/region (starting page address).
+| LUN-select (1 bit) | Plane-select (1 bit) | Block-select (11 bit) | Page-select (7 bit)|
+This way incrementing and decrementing becomes easier for the addressing unit.
+
+
+
+
+
